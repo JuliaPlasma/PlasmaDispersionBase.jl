@@ -1,0 +1,28 @@
+name = "PlasmaDispersionBase"
+uuid = "d133dfe1-3f12-4270-b956-f7134e633753"
+version = "0.1.0"
+authors = ["Zijin Zhang <zijin@ucla.edu>"]
+
+[workspace]
+projects = ["test"]
+
+[deps]
+CommonSolve = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+PlasmaPopulations = "19fe0aba-210f-40e6-8711-72208e0968be"
+
+[weakdeps]
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[sources]
+PlasmaPopulations = { url = "https://github.com/JuliaPlasma/PlasmaPopulations.jl" }
+
+[extensions]
+PlasmaDispersionBaseMakieExt = "Makie"
+
+[compat]
+CommonSolve = "0.2"
+LinearAlgebra = "1"
+Makie = "0.23, 0.24"
+PlasmaPopulations = "0.1"
+julia = "1.10"

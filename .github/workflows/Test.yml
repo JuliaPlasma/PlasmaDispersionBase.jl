@@ -1,0 +1,30 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "test/**"
+      - "Project.toml"
+    tags: ["*"]
+  pull_request:
+    paths:
+      - "src/**"
+      - "test/**"
+      - "Project.toml"
+  workflow_dispatch:
+concurrency:
+  # Skip intermediate builds: always.
+  # Cancel intermediate builds: only if it is a pull request build.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+jobs:
+  test:
+    uses: JuliaSpacePhysics/actions/.github/workflows/julia-ci.yml@main
+    with:
+      versions: '["1", "pre"]'
+    permissions:
+      actions: write
+      contents: read
+    secrets: inherit
