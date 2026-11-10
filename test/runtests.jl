@@ -40,6 +40,14 @@ end
     # A fast branch among many static roots is not cut
     vals = [[ComplexF64(k); 10 .+ 0.001 .* (1:50)] for k in ks]
     @test all(==(1), only(linksheets(vals; gate = Inf, seed = (CartesianIndex(10), 1))))
+
+    # A growing root meets its damped twin at k₀ and the pair splits into two real roots.
+    k₀, ks = 0.51, 0.0:0.025:1.0
+    pair(k) = 9.1 + (k - k₀) .+ 0.5 .* (k < k₀ ? (im, -im) : (-1, 1)) .* sqrt(abs(k - k₀))
+    vals = [ComplexF64[pair(k)..., fill(9.0 - 0.003im, 4)...] for k in ks]
+    for cell in (firstindex(ks), lastindex(ks))
+        @test all(<=(2), only(linksheets(vals; gate = Inf, seed = (CartesianIndex(cell), 1))))
+    end
 end
 
 # A solver whose roots at k̃ are ω̃ = k̃∥ and ω̃ = 3 − k̃∥ + 0.1i, in normalized units, box or not

@@ -57,10 +57,11 @@ function _grow!(pool, live, grid, steps, sc, si, gate, δ)
     return idx
 end
 
-# Quadratic extrapolation lets a smoothly bending branch cross a flat one without swapping
-# when the bend is mild. A kink where the second difference `|a−2b+d|` exceeds `_CURV·|a−b|` 
-# (e.g. an instability bifurcation) would overshoot onto a neighbouring branch -> linear
-const _CURV = 0.4
+# Extrapolate by backward differences ∇, ∇², ∇³. Quadratic's error is about ∇³;
+# while ∇³ is small beside ∇ or ∇², the branch is smooth on the grid scale. 
+# Where ∇³ rivals both, the branch has a kink, typically a root pair meeting
+# or splitting at an instability's onset or end, and no trend holds: stay at the last value.
+const _KINK = 0.7
 function _quadratic_extrapolate(pool, idx, c, steps)
     acc = zero(eltype(eltype(pool)))
     step = nothing
@@ -68,17 +69,16 @@ function _quadratic_extrapolate(pool, idx, c, steps)
     for s in steps
         a = _claimed(pool, idx, c + s)
         isnothing(a) && continue
-        b = _claimed(pool, idx, c + 2s)
-        d = _claimed(pool, idx, c + 3s)
-        acc += if isnothing(b)
-            a
-        elseif isnothing(d) || abs(a - 2b + d) > _CURV * abs(a - b)
-            2a - b
-        else
-            3a - 3b + d
-        end
-        isnothing(b) || (step = max(something(step, 0.0), abs(a - b)))
         n += 1
+        b = _claimed(pool, idx, c + 2s)
+        isnothing(b) && (acc += a; continue)
+        step = max(something(step, 0.0), abs(a - b))
+        d = _claimed(pool, idx, c + 3s)
+        isnothing(d) && (acc += 2a - b; continue)
+        e = _claimed(pool, idx, c + 4s)
+        ∇, ∇² = a - b, a - 2b + d
+        kink = !isnothing(e) && abs(∇² - (b - 2d + e)) > _KINK * max(abs(∇²), abs(∇))
+        acc += kink ? a : a + ∇ + ∇²
     end
     return n == 0 ? nothing : (acc / n, step)
 end
