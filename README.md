@@ -90,4 +90,5 @@ Public, not exported, for solvers:
 | `normalized(prob)` | `(prob, units)`: the problem solvers run, and the `(; omega, k)` its ω and k multiply by to give `prob`'s; for a solver's functions outside `solve` (a residual, a matrix) |
 | `realtype(prob)` | the real float type of `prob`'s numbers, for a solver's containers |
 | `successful_retcode(sol)` | whether a solve fully converged |
+| `muller(f, x0; atol = 1e-10, maxiter = 100)`, `muller(f, x0, x1, x2; …)` -> (root, nevals, retcode) | Derivative-free root-finding algorithm of complex `f` by David Muller in 1956, from a guess or three starting points; `root` is `NaN` unless converged |
 | `window(target)` | the ω window a survey keeps roots in for linking: the box widened by ⅛ of its diagonal per side |

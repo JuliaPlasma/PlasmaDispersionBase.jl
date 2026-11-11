@@ -13,7 +13,7 @@ export isgrowing, link, track, refine, dispersion_diagram, dispersion_diagram!
 
 VERSION >= v"1.11.0-DEV.469" && eval(Meta.parse("""public ParameterGeometry, wavevectors, remake,
     DispersionSolution, SurveySolution, BranchSolution, DispersionBranch, SolveStats, successful_retcode,
-    window, pointsolver, seedsolver, normalized, realtype"""))
+    window, pointsolver, seedsolver, normalized, realtype, muller"""))
 
 include("wavevector.jl")
 include("plasma.jl")
@@ -22,6 +22,7 @@ include("solution.jl")
 include("linking.jl")
 include("survey.jl")
 include("seeded.jl")
+include("muller.jl")
 
 function dispersion_diagram! end
 function dispersion_diagram end

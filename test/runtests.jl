@@ -172,6 +172,32 @@ end
     @test_throws ArgumentError solve(DispersionProblem(plasma, geom), NearestLine())
 end
 
+@testset "muller" begin
+    using PlasmaDispersionBase: muller
+    f(z) = (z - (1 + 2im)) * (z + 3) * exp(z)
+    root, nevals, code = muller(f, 0.8 + 1.7im)
+    @test code == ReturnCode.Success && root ≈ 1 + 2im && nevals < 20
+
+    # Non-finite f fails; a trial step into overflow contracts back toward the finite iterates
+    @test isnan(muller(x -> ComplexF64(Inf, Inf), 1.0, 1.1, 1.2)[1])
+    @test isnan(muller(x -> ComplexF64(NaN, NaN), 1.0, 1.1, 1.2)[1])
+    hits = Ref(0)
+    fovf(x) = (v = exp(10x) - 1; isfinite(v) || (hits[] += 1); v)
+    @test abs(muller(fovf, -2.0, -1.9, -1.8)[1]) < 1.0e-10 && hits[] > 0
+
+    # Zero-free, with decades of |f| across any seed triple: a collapsed step is no root.
+    slope(x) = exp(1.0e7 * x^2)
+    @test all(muller(slope, 0.002 * cis(θ))[3] != ReturnCode.Success for θ in 0:0.2:6.2)
+
+    # A root resolved only to the function's own noise, above `atol`, still converges.
+    r0 = 0.3 - 0.1im
+    noisy(x) = (x - r0) * (1 + x) + 1.0e-9 * cis(1.0e15 * real(x))
+    for seed in (r0, r0 + 0.01)
+        x, _, code = muller(noisy, seed)
+        @test code == ReturnCode.Success && abs(x - r0) < 1.0e-8
+    end
+end
+
 @testset "Unmagnetized plasma normalizes by a plasma frequency" begin
     p = Proton()
     plasma = Plasma(Population(p, BiMaxwellian; T = 1.0, n = 1.0e6); B0 = 0.0)
