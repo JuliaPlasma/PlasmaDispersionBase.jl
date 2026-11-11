@@ -1,11 +1,12 @@
 module PlasmaDispersionBase
 
 using LinearAlgebra: LinearAlgebra, BLAS, norm
-using PlasmaPopulations: Plasma, Particle, AbstractVDF, C_SI, gyrofrequency, plasma_frequency, alfven_speed,
-    si_frequency, vth_perp_para
+using PlasmaPopulations
+using PlasmaPopulations: C_SI, gyrofrequency, plasma_frequency, alfven_speed, si_frequency
 using CommonSolve
 import CommonSolve: solve
 
+eval(Expr(:export, filter!(n -> Base.isexported(PlasmaPopulations, n), names(PlasmaPopulations))...))
 export Wavevector, AngleSweep, CartesianSweep
 export NormalizedPopulation, NormalizedPlasma, scales
 export DispersionProblem, Seed, Region, ReturnCode, solve

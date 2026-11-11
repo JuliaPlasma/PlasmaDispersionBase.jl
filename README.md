@@ -8,7 +8,7 @@ normalization and branch linking. Solvers are separate packages that plug in the
 | [VlasovMaxwellDispersion.jl](https://github.com/JuliaSpacePhysics/VlasovMaxwellDispersion.jl) | root finding on the exact hot-plasma `det 𝒟`: `Muller`, `Continuation`, `AAA`, `GRPF` |
 | [PlasmaBO.jl](https://github.com/JuliaSpacePhysics/PlasmaBO.jl) | every root at once as matrix eigenvalues: `BOHH`, `BOPBK`, `BOFluid` |
 
-Plasmas are described with [PlasmaPopulations.jl](https://github.com/JuliaPlasma/PlasmaPopulations.jl).
+Plasmas are described with [PlasmaPopulations.jl](https://github.com/JuliaPlasma/PlasmaPopulations.jl), re-exported here.
 
 ```julia
 using VlasovMaxwellDispersion   # or PlasmaBO; both re-export this package's API
