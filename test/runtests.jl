@@ -48,6 +48,16 @@ end
     for cell in (firstindex(ks), lastindex(ks))
         @test all(<=(2), only(linksheets(vals; gate = Inf, seed = (CartesianIndex(cell), 1))))
     end
+
+    # Crossing stable lines stay whole whichever cell's rounding makes it the seed
+    ks = range(0, 1; length = 9)
+    for cell in eachindex(ks), line in 1:2
+        vals = [ComplexF64[2.7 + 1.4k^2, 3.16] for k in ks]
+        vals[cell][line] += 1.0e-20im
+        sheets = linksheets(vals; gate = 0.5)
+        @test length(sheets) == 2
+        @test all(sh -> allequal(sh) && !iszero(first(sh)), sheets)
+    end
 end
 
 # A solver whose roots at k̃ are ω̃ = k̃∥ and ω̃ = 3 − k̃∥ + 0.1i, in normalized units, box or not

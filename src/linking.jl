@@ -7,6 +7,7 @@ One sheet is traced at a time, seeded at the highest-growth-rate
 unclaimed value and grown outward: each frontier cell takes the
 nearest unclaimed value within `gate` of a quadratic extrapolation, within
 `_JUMP` local steps, or mutually nearest where the sheet has no step yet.
+A seed that links nowhere is deferred until every other seed has grown.
 `seed = (I, i)` instead traces the single sheet through `vals[I][i]`.
 """
 function linksheets(vals::AbstractArray{<:Any,M}; gate, seed = nothing) where {M}
@@ -16,17 +17,25 @@ function linksheets(vals::AbstractArray{<:Any,M}; gate, seed = nothing) where {M
     live = map(p -> trues(length(p)), pool)          # still unclaimed
     steps = [CartesianIndex(ntuple(i -> ifelse(i == j, s, 0), M)) for j in 1:M for s in (-1, 1)]
     δ = _grid_step(pool, grid, steps)
-    isnothing(seed) || return [_grow!(pool, live, grid, steps, CartesianIndex(seed[1]), seed[2], gate, δ)]
+    grow!(c, i) = _grow!(pool, live, grid, steps, c, i, gate, δ)
+    isnothing(seed) || return [grow!(CartesianIndex(seed[1]), seed[2])]
     sheets = Array{Int,M}[]
-    while true
-        sc = zero(CartesianIndex{M})                 # seed at the highest-growth live value
-        si = 0
-        best = -Inf
-        for c in grid, i in eachindex(pool[c])
-            live[c][i] && imag(pool[c][i]) > best && (best=imag(pool[c][i]); sc=c; si=i)
+    # Beside a crossing a seed's nearest neighbours belong to the other line, so it links
+    # nowhere; kept as a one-cell sheet it would split its branch. Deferred so its branch can reach it by extrapolation.
+    deferred = Tuple{CartesianIndex{M},Int}[]
+    seeds = sort!([(c, i) for c in grid for i in eachindex(pool[c])]; by = ((c, i),) -> -imag(pool[c][i]))
+    for (c, i) in seeds
+        live[c][i] || continue
+        sheet = grow!(c, i)
+        if count(!iszero, sheet) == 1
+            live[c][i] = true
+            push!(deferred, (c, i))
+        else
+            push!(sheets, sheet)
         end
-        si == 0 && break
-        push!(sheets, _grow!(pool, live, grid, steps, sc, si, gate, δ))
+    end
+    for (c, i) in deferred
+        live[c][i] && push!(sheets, grow!(c, i))
     end
     return sheets
 end
@@ -37,22 +46,31 @@ function _grow!(pool, live, grid, steps, sc, si, gate, δ)
     idx = zeros(Int, size(pool))
     idx[sc] = si
     frontier = [sc + s for s in steps if (sc + s) in grid]
-    while !isempty(frontier)
-        c = popfirst!(frontier)
-        iszero(idx[c]) || continue
-        e = _quadratic_extrapolate(pool, idx, c, steps)
-        isnothing(e) && continue
-        w, step = e
-        i = _nearest_live(pool[c], live[c], w, isnothing(step) ? gate : _jump_tol(gate, step, δ))
-        # No step history: mutual nearest match, so a sheet absent here can't steal another's root
-        isnothing(step) && i != 0 && !_matched_back(pool, idx, c, steps, pool[c][i]) && continue
-        i == 0 && continue
-        live[c][i] = false
-        idx[c] = i
-        for s in steps
-            nb = c + s
-            (nb in grid && iszero(idx[nb])) && push!(frontier, nb)
+    retry = empty(frontier)
+    while true
+        grown = false
+        while !isempty(frontier)
+            c = popfirst!(frontier)
+            iszero(idx[c]) || continue
+            w, step = _quadratic_extrapolate(pool, idx, c, steps)
+            i = _nearest_live(pool[c], live[c], w, isnothing(step) ? gate : _jump_tol(gate, step, δ))
+            # No step: take only a mutual nearest match, so a sheet absent here can't steal
+            # another's root; retry once the sheet has grown elsewhere
+            if isnothing(step) && i != 0 && !_matched_back(pool, idx, c, steps, pool[c][i])
+                push!(retry, c)
+                continue
+            end
+            i == 0 && continue
+            live[c][i] = false
+            idx[c] = i
+            grown = true
+            for s in steps
+                nb = c + s
+                (nb in grid && iszero(idx[nb])) && push!(frontier, nb)
+            end
         end
+        (grown && !isempty(retry)) || break
+        frontier, retry = retry, frontier
     end
     return idx
 end
@@ -80,7 +98,7 @@ function _quadratic_extrapolate(pool, idx, c, steps)
         kink = !isnothing(e) && abs(∇² - (b - 2d + e)) > _KINK * max(abs(∇²), abs(∇))
         acc += kink ? a : a + ∇ + ∇²
     end
-    return n == 0 ? nothing : (acc / n, step)
+    return acc / n, step
 end
 
 _matched_back(pool, idx, c, steps, v) = all(steps) do s
