@@ -73,6 +73,11 @@ PlasmaDispersionBase.seedsolver(prob, ::NearestLine; reach = 1) = function (k, �
     return (; omega = ok ? ω : complex(NaN, NaN), resid = nothing, nevals = 1, retcode = ok ? ReturnCode.Success : ReturnCode.Failure)
 end
 
+# The root of {k̃∥, 1.2} nearest the guess: a static root beside a moving one
+struct LineOrStatic end
+PlasmaDispersionBase.seedsolver(prob, ::LineOrStatic) =
+    (k, ω0) -> (; omega = complex(argmin(z -> abs(z - ω0), (k.k_para, 1.2))), resid = nothing, nevals = 1, retcode = ReturnCode.Success)
+
 # A branch leaving the box through a mode just inside its edge
 struct EdgeRoots end
 PlasmaDispersionBase.pointsolver(prob, ::EdgeRoots) =
@@ -129,6 +134,16 @@ end
     @test seeded.omega == sol.omega && seeded.retcode == ReturnCode.Success && seeded.k == sol.k
     @test solve(DispersionProblem(plasma, 0.9 * Ω, Wavevector(0.0, kn)), LineRoots()).omega ≈ Ω
     @test solve(DispersionProblem(plasma, 1.2 * Ω, Wavevector(0.0, kn)), NearestLine()).omega ≈ Ω
+    @test solve(DispersionProblem(plasma, 1.2 * Ω, Wavevector(0.0, kn)), Continuation(NearestLine())).omega ≈ Ω
+
+    # Continuation follows the same branch from a mid-path anchor; `solve` keywords reach `base`
+    cont = solve(DispersionProblem(plasma, Seed(2.0 * Ω, Wavevector(0.0, kn)), geom), Continuation(NearestLine()))
+    @test cont.omega ≈ sol.omega && cont.retcode == ReturnCode.Success && cont.k == sol.k && isnothing(cont.resid)
+    lost = solve(DispersionProblem(plasma, Seed(2.0 * Ω, Wavevector(0.0, kn)), geom), Continuation(NearestLine()); reach = 1.0e-9)
+    @test lost.retcode == ReturnCode.Partial && all(isnan, lost.omega)
+    # The first step is checked too: from one node the static root is nearer than the moving one
+    ks = Wavevector.(0.0, kn .* [1.0, 1.5, 2.0])
+    @test solve(DispersionProblem(plasma, Seed(1.0 * Ω), ks), Continuation(LineOrStatic())).omega ≈ [1.0, 1.5, 2.0] .* Ω
 
     # A guess at every wavevector, in problem units, refined by the single-wavevector solve:
     # a missing guess and a failed solve are both NaN

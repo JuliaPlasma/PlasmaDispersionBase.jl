@@ -11,6 +11,7 @@ export Wavevector, AngleSweep, CartesianSweep
 export NormalizedPopulation, NormalizedPlasma, scales
 export DispersionProblem, Seed, Region, ReturnCode, solve
 export isgrowing, link, track, refine, dispersion_diagram, dispersion_diagram!
+export Continuation
 
 VERSION >= v"1.11.0-DEV.469" && eval(Meta.parse("""public ParameterGeometry, wavevectors, remake,
     DispersionSolution, SurveySolution, BranchSolution, DispersionBranch, SolveStats, successful_retcode,
@@ -23,6 +24,7 @@ include("solution.jl")
 include("linking.jl")
 include("survey.jl")
 include("seeded.jl")
+include("continuation.jl")
 
 function dispersion_diagram! end
 function dispersion_diagram end
