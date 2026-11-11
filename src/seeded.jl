@@ -29,10 +29,12 @@ function _solve(prob::DispersionProblem{<:Seed, <:Wavevector}, alg; kw...)
     return DispersionSolution(r.omega, r.resid, SolveStats(r.nevals, (time_ns() - t0) / 1.0e9), r.retcode, prob, alg)
 end
 
+_solve(prob::DispersionProblem{<:Seed}, alg; kw...) = _follow(prob, alg; kw...)
+
 # A seed along several wavevectors, by an algorithm that finds every root at each.
-function _solve(prob::DispersionProblem{<:Seed}, alg; kw...)
+function _follow(prob, alg; kw...)
     applicable(pointsolver, prob, alg) || throw(ArgumentError(
-        "$(_algname(alg)) finds one root at one wavevector: to follow a seed along several, wrap it in a continuation algorithm"
+        "$(_algname(alg)) finds one root at one wavevector: to follow a seed along several, wrap it in `Continuation`"
     ))
     survey = _solve(remake(prob; target = Region(nothing)), alg; kw...)
     (; omega0, at) = prob.target
