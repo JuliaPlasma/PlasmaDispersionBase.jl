@@ -41,7 +41,7 @@ filter(isgrowing, branches)
 | `track(survey, ω0, k0; gate = Inf)` | the branch through the survey's root nearest `ω0` at its wavevector nearest `k0`, a `DispersionSolution` |
 | `refine(prob, ωs, alg; gate = Inf, kw...)` | a guess at each wavevector of `prob`, `ωs` shaped like them, each solved by `alg`: a `DispersionSolution`, `NaN` where a guess is not finite, its solve fails, or the root moves further than `gate·Ω_ref`. `kw` are `solve` keywords of `alg`, over those stored on `prob` |
 | `refine(sol, alg; gate = Inf, kw...)` | the same from every root of `sol`, at any stage: a survey before linking, its branches, or a seeded solution; e.g. eigenvalue roots polished on the exact determinant. |
-| `Continuation(base; order = 3, reltol = 1e-2, abstol = 1e-10, maxsubdiv = 10)` | algorithm for a `Seed` along a path with seeded algorithm `base`: predicts each root by extrapolating the last `order + 1` along `k`, and bisects the step where `base` lands further than `reltol·\|ω\| + abstol` [`Ω_ref`] from it, up to `maxsubdiv` times, else `NaN`; a seed anchored mid-path is followed both ways. |
+| `Continuation(base; order = 3, reltol = 1e-2, abstol = 1e-10, maxsubdiv = 10)` | algorithm for a `Seed` along a path with seeded algorithm `base`: predicts each root by extrapolating the last `order + 1` along `k`, and bisects the step where `base` fails or lands further than `reltol·\|ω\| + abstol` [`Ω_ref`] from it, up to `maxsubdiv` times, else `NaN`; a seed anchored mid-path is followed both ways. |
 | `ReturnCode.T` | `Success`, `Partial`, `Saturated`, `MaxIters`, `Failure` |
 | `dispersion_diagram(sol; k_unit, omega_unit)`, `dispersion_diagram!` | `Re ω(k)` and `Im ω(k)` of linked branches or of seeded solutions, or of a survey's roots in its box as unlinked points; with Makie loaded |
 | below | public, not exported |
@@ -79,8 +79,13 @@ An algorithm implements one of them; each returns a callable built once per solv
 
 | hook | for | gives |
 |---|---|---|
-| `seedsolver(prob, alg; kw...) -> s`, `s(k, ω0) = (; omega, resid, nevals, retcode)` | one root from a guess | `Seed` at one `Wavevector`, `refine` |
-| `pointsolver(prob, alg; kw...) -> s`, `s(k) = (; omega, resid, nevals, converged)` | every root at one wavevector | `Region` surveys |
+| `seedsolver(prob, alg; kw...) -> s`, `s(k, ω0) = (; omega, resid, nevals, retcode)` | one root from a guess | `Seed` at one `Wavevector`, `Continuation`'s `base`, `refine` |
+| `pointsolver(prob, alg; kw...) -> s`, `s(k) = (; omega, resid, nevals, converged)` | every root at one wavevector | `Region` surveys, and a `seedsolver` taking the nearest root |
+
+- `omega`: a complex number from `seedsolver`, a vector from `pointsolver`.
+- `resid`: the residual at `omega`, aligned with it or `nothing`.
+- `retcode`: `omega` is a root only with `Success`; `refine` and `Continuation` drop the point otherwise.
+- `converged = false` when the search may have missed roots.
 
 A `pointsolver` searches at least `window(prob.target)`, wider than the box: roots outside the window are dropped.
 

@@ -5,7 +5,7 @@ Track one root branch along an ordered `k` path, a `Seed` target: each step extr
 degree-`order` polynomial in arclength through the last accepted roots, and the seeded algorithm
 `base` corrects it. A seed anchored mid-path is tracked outward both ways.
 
-A step is accepted within `reltol·|ω| + abstol` [`Ω_ref`] of its prediction; otherwise the k-interval
+A step is accepted when `base` succeeds within `reltol·|ω| + abstol` [`Ω_ref`] of its prediction; otherwise the k-interval
 is bisected and retried, up to `maxsubdiv` levels. An interval still unresolved is `NaN`, and the
 solution `ReturnCode.Partial`.
 """
@@ -70,7 +70,7 @@ function _advance!(path, kt, depth = 0)
     guess = _predict(path, kt)
     r = path.solver(kt, guess)
     path.nevals += r.nevals
-    if _accept(path, r.omega, guess)
+    if successful_retcode(r.retcode) && _accept(path, r.omega, guess)
         _push!(path, kt, r.omega)
         return r.omega, r.resid
     end

@@ -5,8 +5,5 @@ PlasmaDispersionBase = "d133dfe1-3f12-4270-b956-f7134e633753"
 PlasmaPopulations = "19fe0aba-210f-40e6-8711-72208e0968be"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
-[sources]
-PlasmaPopulations = {rev = "main", url = "https://github.com/JuliaPlasma/PlasmaPopulations.jl"}
-
 [compat]
 Aqua = "0.8"

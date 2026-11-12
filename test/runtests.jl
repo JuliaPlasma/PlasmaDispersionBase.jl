@@ -70,7 +70,7 @@ struct NearestLine end
 PlasmaDispersionBase.seedsolver(prob, ::NearestLine; reach = 1) = function (k, ω0)
     ω = complex(argmin(z -> abs(z - ω0), (k.k_para, 3 - k.k_para + 0.1im)))
     ok = abs(ω - ω0) < reach
-    return (; omega = ok ? ω : complex(NaN, NaN), resid = nothing, nevals = 1, retcode = ok ? ReturnCode.Success : ReturnCode.Failure)
+    return (; omega = ok ? ω : complex(ω0), resid = nothing, nevals = 1, retcode = ok ? ReturnCode.Success : ReturnCode.Failure)
 end
 
 # The root of {k̃∥, 1.2} nearest the guess: a static root beside a moving one
