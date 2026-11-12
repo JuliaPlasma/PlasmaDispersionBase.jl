@@ -113,6 +113,11 @@ end
     @test b.omega_ref ≈ Ω && isnothing(b.resid)
     @test count(isgrowing, sol) == 1
 
+    # Solvers see signed gyrofrequencies and squared plasma frequencies in Ω_ref
+    pops = PlasmaDispersionBase.normalized(DispersionProblem(plasma, geom))[1].plasma.populations
+    @test [s.Omega for s in pops] ≈ [1, gyrofrequency(Electron(), B0) / Ω]
+    @test [s.Pi2 for s in pops] ≈ [plasma_frequency(p, 1.0e6), plasma_frequency(Electron(), 1.0e6)] .^ 2 ./ Ω^2
+
     # Every root, no box; at a single wavevector `omega` is the vector of roots
     sol = solve(DispersionProblem(NormalizedPlasma(), Wavevector(0.0, 1.0)), LineRoots())
     @test sort(sol.omega; by = real) == [1.0, 2.0 + 0.1im]
@@ -132,6 +137,9 @@ end
     # A seed is the same branch without the survey, and at one wavevector the nearest root
     seeded = solve(DispersionProblem(plasma, Seed(2.0 * Ω, Wavevector(0.0, kn)), geom), LineRoots())
     @test seeded.omega == sol.omega && seeded.retcode == ReturnCode.Success && seeded.k == sol.k
+    # over a 2-D sweep, shaped (k_perp, k_para)
+    sweep2 = CartesianSweep(; k_perp = [0.0, kn], k_para = geom.k_para)
+    @test solve(DispersionProblem(plasma, Seed(2.0 * Ω, Wavevector(0.0, kn)), sweep2), LineRoots()).omega ≈ repeat(permutedims(sol.omega), 2)
     @test solve(DispersionProblem(plasma, 0.9 * Ω, Wavevector(0.0, kn)), LineRoots()).omega ≈ Ω
     @test solve(DispersionProblem(plasma, 1.2 * Ω, Wavevector(0.0, kn)), NearestLine()).omega ≈ Ω
     @test solve(DispersionProblem(plasma, 1.2 * Ω, Wavevector(0.0, kn)), Continuation(NearestLine())).omega ≈ Ω
