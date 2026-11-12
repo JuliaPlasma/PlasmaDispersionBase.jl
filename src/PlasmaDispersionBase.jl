@@ -13,8 +13,8 @@ export DispersionProblem, Seed, Region, ReturnCode, solve
 export isgrowing, link, track, refine, dispersion_diagram, dispersion_diagram!
 export Continuation
 
-VERSION >= v"1.11.0-DEV.469" && eval(Meta.parse("""public ParameterGeometry, wavevectors, remake,
-    DispersionSolution, SurveySolution, BranchSolution, DispersionBranch, SolveStats, successful_retcode,
+VERSION >= v"1.11.0-DEV.469" && eval(Meta.parse("""public wavevectors, remake,
+    DispersionSolution, SurveySolution, BranchSolution, DispersionBranch, successful_retcode,
     window, pointsolver, seedsolver, normalized, realtype"""))
 
 include("wavevector.jl")
