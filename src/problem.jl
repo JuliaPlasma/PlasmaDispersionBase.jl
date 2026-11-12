@@ -104,7 +104,7 @@ _target(box::Tuple) = Region(box)
 `prob` with the given fields replaced.
 """
 remake(prob::DispersionProblem; plasma = prob.plasma, target = prob.target, k = prob.k, ref = prob.ref, kwargs = prob.kwargs) =
-    DispersionProblem(plasma, target, k, ref, NamedTuple(kwargs))
+    DispersionProblem(plasma, target, k; ref, kwargs...)
 
 realtype(t::Seed) = promote_type(realtype(t.omega0), realtype(t.at))
 realtype(r::Region) = realtype(r.box)
