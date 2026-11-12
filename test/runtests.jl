@@ -1,6 +1,6 @@
 using PlasmaDispersionBase
 using PlasmaDispersionBase: wavevectors, linksheets, ReturnCode
-using LinearAlgebra: norm
+using LinearAlgebra: BLAS, norm
 using PlasmaPopulations: Plasma, Population, Proton, Electron, BiMaxwellian, C_SI, gyrofrequency, plasma_frequency
 using Test
 
@@ -185,6 +185,31 @@ end
     @test_throws ArgumentError solve(DispersionProblem(plasma, geom), :not_an_algorithm)
     @test_throws ArgumentError solve(DispersionProblem(plasma, 1.0, geom), NearestLine())
     @test_throws ArgumentError solve(DispersionProblem(plasma, geom), NearestLine())
+end
+
+# Roots that report the BLAS threads each point ran with; `hook` runs first at every point but the first
+struct BlasSeen{F}
+    hook::F
+end
+PlasmaDispersionBase.pointsolver(prob, a::BlasSeen) = function (k)
+    k.k_para == 1 || a.hook()
+    return (; omega = ComplexF64[BLAS.get_num_threads()], resid = nothing, nevals = 1, converged = true)
+end
+
+@testset "BLAS runs single-threaded only while point solves run in parallel" begin
+    n0 = BLAS.get_num_threads()
+    BLAS.set_num_threads(4)
+    x = Threads.threadpoolsize() == 1 ? 4 : 1
+    seen = [[4], [x], [x]]
+    survey(alg) = solve(DispersionProblem(NormalizedPlasma(), CartesianSweep(; k_para = [1.0, 2.0, 3.0])), alg).omega
+    @test survey(BlasSeen(Returns(nothing))) == seen
+    # A survey that outlasts a concurrent one stays single-threaded
+    entered, release = Base.Event(), Base.Event()
+    a = Threads.@spawn survey(BlasSeen(() -> (notify(entered); wait(release))))
+    wait(entered)
+    @test survey(BlasSeen(() -> (notify(release); wait(a)))) == [[x], [x], [x]]
+    @test fetch(a) == seen && BLAS.get_num_threads() == 4
+    BLAS.set_num_threads(n0)
 end
 
 @testset "Unmagnetized plasma normalizes by a plasma frequency" begin

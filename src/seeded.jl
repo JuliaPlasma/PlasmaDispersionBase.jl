@@ -86,11 +86,7 @@ function _refine(seeded, prob, p, u, guesses, alg, gate)
         return
     end
     isnothing(r1) || store!(first(todo), r1)
-    _single_blas() do
-        Threads.@threads for i in todo[2:end]
-            store!(i, seeded(ks[i], gs[i]))
-        end
-    end
+    _tforeach(i -> store!(i, seeded(ks[i], gs[i])), todo[2:end])
     nfound = count(isfinite, omega)
     code = iszero(nfound) ? ReturnCode.Failure : nfound == length(todo) ? ReturnCode.Success : ReturnCode.Partial
     stats = SolveStats(sum(nevals), (time_ns() - t0) / 1.0e9)
@@ -136,11 +132,7 @@ function refine(sol::SurveySolution, alg; gate = Inf, kw...)
         return (; omega = omega .* u.omega, resid, nevals, reports, complete)
     end
     out = Vector{Any}(undef, length(ks))
-    _single_blas() do
-        Threads.@threads for i in eachindex(out)
-            out[i] = cell(i)
-        end
-    end
+    _tforeach(i -> out[i] = cell(i), eachindex(out))
     roots = reshape([o.omega for o in out], size(ks))
     resids = any(o -> o.reports, out) ? reshape([o.resid for o in out], size(ks)) : fill(nothing, size(ks))
     code = all(isempty, roots) ? ReturnCode.Failure :

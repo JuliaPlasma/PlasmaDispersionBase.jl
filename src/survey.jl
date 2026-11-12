@@ -33,28 +33,39 @@ function _pointroots(point, prob)
         keep = findall(z -> z in win, r.omega)
         return (zv[i], rv[i], nev[i], conv[i]) = (r.omega[keep], _pick(r.resid, keep), r.nevals, r.converged)
     end
-    i1 = firstindex(ks)
+    i1, rest = Iterators.peel(eachindex(ks))
     store!(i1, r1)
-    _single_blas() do
-        Threads.@threads for i in eachindex(ks)
-            i == i1 || store!(i, point(ks[i]))
-        end
-    end
+    _tforeach(i -> store!(i, point(ks[i])), collect(rest))
     return ks, zv, rv, nev, conv
 end
 
 _pick(::Nothing, keep) = nothing
 _pick(x, keep) = x[keep]
 
-# Point solvers run on parallel threads; BLAS threads on top would oversubscribe.
+function _tforeach(f, idx)
+    (length(idx) ≤ 1 || Threads.threadpoolsize() == 1) && return foreach(f, idx)
+    _single_blas() do
+        Threads.@threads for i in idx
+            f(i)
+        end
+    end
+    return
+end
+
+# BLAS threads are process-wide: concurrent solves share one setting, restored by the last to finish.
+const _BLAS = (lock = ReentrantLock(), users = Ref(0), saved = Ref(1))
 function _single_blas(f)
-    n = BLAS.get_num_threads()
-    n == 1 && return f()
-    BLAS.set_num_threads(1)
+    @lock _BLAS.lock begin
+        iszero(_BLAS.users[]) && (_BLAS.saved[] = BLAS.get_num_threads(); BLAS.set_num_threads(1))
+        _BLAS.users[] += 1
+    end
     try
         return f()
     finally
-        BLAS.set_num_threads(n)
+        @lock _BLAS.lock begin
+            _BLAS.users[] -= 1
+            iszero(_BLAS.users[]) && BLAS.set_num_threads(_BLAS.saved[])
+        end
     end
 end
 
