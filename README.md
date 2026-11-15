@@ -14,8 +14,8 @@ Plasmas are described with [PlasmaPopulations.jl](https://github.com/JuliaPlasma
 using VlasovMaxwellDispersion   # or PlasmaBO; both re-export this package's API
 using PlasmaPopulations: gyrofrequency
 
-plasma = Plasma(Population(Proton(), BiMaxwellian; T = 100.0, n = 5e6), Population(Electron(), BiMaxwellian; T = 50.0, n = 5e6); B0 = 5e-9)
-Ωp = gyrofrequency(Proton(), plasma.B0)
+plasma = Plasma(Population(Proton, BiMaxwellian; T = 100.0, n = 5e6), Population(Electron, BiMaxwellian; T = 50.0, n = 5e6); B0 = 5e-9)
+Ωp = gyrofrequency(Proton, plasma.B0)
 ks = AngleSweep(; k = range(1e-6, 1e-5, 20), theta = deg2rad(30))
 alg = AAA()   # or PlasmaBO's BOHH()
 

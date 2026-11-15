@@ -96,9 +96,9 @@ PlasmaDispersionBase.pointsolver(prob, ::EdgeRoots) =
 end
 
 @testset "Survey and tracking through a solver" begin
-    p = Proton()
+    p = Proton
     B0 = 1.0e-8
-    plasma = Plasma(Population(p, BiMaxwellian; T = 1.0, n = 1.0e6), Population(Electron(), BiMaxwellian; T = 1.0, n = 1.0e6); B0)
+    plasma = Plasma(Population(p, BiMaxwellian; T = 1.0, n = 1.0e6), Population(Electron, BiMaxwellian; T = 1.0, n = 1.0e6); B0)
     Ω = gyrofrequency(p, B0)
     kn = Ω / C_SI
     geom = CartesianSweep(; k_para = collect(range(0.1, 1.2; length = 12)) .* kn)
@@ -115,8 +115,8 @@ end
 
     # Solvers see signed gyrofrequencies and squared plasma frequencies in Ω_ref
     pops = PlasmaDispersionBase.normalized(DispersionProblem(plasma, geom))[1].plasma.populations
-    @test [s.Omega for s in pops] ≈ [1, gyrofrequency(Electron(), B0) / Ω]
-    @test [s.Pi2 for s in pops] ≈ [plasma_frequency(p, 1.0e6), plasma_frequency(Electron(), 1.0e6)] .^ 2 ./ Ω^2
+    @test [s.Omega for s in pops] ≈ [1, gyrofrequency(Electron, B0) / Ω]
+    @test [s.Pi2 for s in pops] ≈ [plasma_frequency(p, 1.0e6), plasma_frequency(Electron, 1.0e6)] .^ 2 ./ Ω^2
 
     # Every root, no box; at a single wavevector `omega` is the vector of roots
     sol = solve(DispersionProblem(NormalizedPlasma(), Wavevector(0.0, 1.0)), LineRoots())
@@ -221,7 +221,7 @@ end
 end
 
 @testset "Unmagnetized plasma normalizes by a plasma frequency" begin
-    p = Proton()
+    p = Proton
     plasma = Plasma(Population(p, BiMaxwellian; T = 1.0, n = 1.0e6); B0 = 0.0)
     @test scales(plasma).Omega_ref ≈ plasma_frequency(p, 1.0e6)
     @test_throws ArgumentError scales(plasma; ref = p)
