@@ -1,6 +1,6 @@
 name = "PlasmaDispersionBase"
 uuid = "d133dfe1-3f12-4270-b956-f7134e633753"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Zijin Zhang <zijin@ucla.edu>"]
 
 [workspace]
