@@ -1,7 +1,7 @@
 using PlasmaDispersionBase
 using PlasmaDispersionBase: wavevectors, linksheets, ReturnCode
 using LinearAlgebra: BLAS, norm
-using PlasmaPopulations: Plasma, Population, Proton, Electron, BiMaxwellian, C_SI, gyrofrequency, plasma_frequency
+using PlasmaPopulations: Plasma, Population, Proton, Electron, BiMaxwellian, Oriented, C_SI, gyrofrequency, plasma_frequency
 using Test
 
 @testset "Wavevector vocabulary" begin
@@ -225,6 +225,13 @@ end
     plasma = Plasma(Population(p, BiMaxwellian; T = 1.0, n = 1.0e6); B0 = 0.0)
     @test scales(plasma).Omega_ref ≈ plasma_frequency(p, 1.0e6)
     @test_throws ArgumentError scales(plasma; ref = p)
+end
+
+@testset "A non-gyrotropic model is split about the plasma field" begin
+    d = Oriented(BiMaxwellian(; vth_perp = 4.0e4, vth_para = 3.0e4), [1, 0, 0])
+    vth(B0) = (s = only(scales(Plasma(Population(Proton, d; n = 1.0e6); B0); ref = 1.0).populations); (s.vth_perp, s.vth_para))
+    @test all(vth([1.0e-8, 0, 0]) .≈ (4.0e4, 3.0e4) ./ C_SI)
+    @test vth(0.0) == (nothing, nothing)
 end
 
 @testset "Aqua" begin

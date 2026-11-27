@@ -46,7 +46,8 @@ the first population's particle, or its plasma frequency when `B0 = 0`.
 - `vA`, `B0` [T], `Omega_ref` [rad/s]
 - `populations`: per population `(; wc, wp, d, vth_perp, vth_para, rho)` with signed
   `wc = Ω_s/Ω_ref`, magnitude `wp = ω_ps/Ω_ref`, inertial length `d = 1/wp`, and, for PlasmaPopulations
-  models, thermal speeds and gyroradius `rho = vth_perp/|wc|` (else `nothing`)
+  models, thermal speeds and gyroradius `rho = vth_perp/|wc|` (`nothing` for other types, and for
+  non-gyrotropic models when `B0 = 0`)
 """
 function scales(plasma::Plasma; ref = _default_ref(plasma))
     B0 = norm(plasma.B0)
@@ -55,12 +56,15 @@ function scales(plasma::Plasma; ref = _default_ref(plasma))
     sp = map(plasma.populations) do s
         wc = gyrofrequency(s.particle, B0) / Ωref
         wp = plasma_frequency(s.particle, s.n) / Ωref
-        vth_perp, vth_para = _vth_perp_para(s.vdf)
+        vth_perp, vth_para = _vth_perp_para(s.vdf, plasma.B0)
         rho = isnothing(vth_perp) ? nothing : vth_perp / abs(wc)
         (; wc, wp, d = 1 / wp, vth_perp, vth_para, rho)
     end
     return (; vA = alfven_speed(plasma) / C_SI, B0, Omega_ref = Ωref, populations = sp)
 end
 
-_vth_perp_para(d::AbstractVDF) = vth_perp_para(d) ./ C_SI
-_vth_perp_para(_) = (nothing, nothing)
+function _vth_perp_para(d::AbstractVDF, B0)
+    isgyrotropic(d) && return vth_perp_para(d) ./ C_SI
+    return iszero(B0) ? (nothing, nothing) : vth_perp_para(d, B0) ./ C_SI
+end
+_vth_perp_para(_, _) = (nothing, nothing)

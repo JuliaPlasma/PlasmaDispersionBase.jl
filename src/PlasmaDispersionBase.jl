@@ -2,7 +2,7 @@ module PlasmaDispersionBase
 
 using LinearAlgebra: LinearAlgebra, BLAS, norm
 using PlasmaPopulations
-using PlasmaPopulations: C_SI, gyrofrequency, plasma_frequency, alfven_speed, si_frequency
+using PlasmaPopulations: C_SI, gyrofrequency, plasma_frequency, alfven_speed, si_frequency, isgyrotropic
 using CommonSolve
 import CommonSolve: solve
 
